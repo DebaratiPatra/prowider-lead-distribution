@@ -213,3 +213,4 @@ DATABASE_URL=... node prisma/seed.js
 - ✅ Duplicate prevention (DB unique constraint on phone+serviceId)
 - ✅ Monthly quota enforcement
 - ✅ Persistent allocation state (survives server restart)
+"# prowider-lead-distribution" 
