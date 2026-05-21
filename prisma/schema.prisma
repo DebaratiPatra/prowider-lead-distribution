@@ -1,0 +1,73 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Service {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  leads       Lead[]
+  allocationStates AllocationState[]
+  createdAt   DateTime @default(now())
+}
+
+model Provider {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  monthlyQuota    Int              @default(10)
+  usedQuota       Int              @default(0)
+  leadAssignments LeadAssignment[]
+  allocationStates AllocationState[]
+  createdAt       DateTime         @default(now())
+}
+
+model Lead {
+  id          Int              @id @default(autoincrement())
+  name        String
+  phone       String
+  city        String
+  description String
+  serviceId   Int
+  service     Service          @relation(fields: [serviceId], references: [id])
+  assignments LeadAssignment[]
+  createdAt   DateTime         @default(now())
+
+  @@unique([phone, serviceId])
+}
+
+model LeadAssignment {
+  id         Int      @id @default(autoincrement())
+  leadId     Int
+  providerId Int
+  lead       Lead     @relation(fields: [leadId], references: [id])
+  provider   Provider @relation(fields: [providerId], references: [id])
+  assignedAt DateTime @default(now())
+
+  @@unique([leadId, providerId])
+}
+
+// Tracks round-robin position per service for fair distribution
+model AllocationState {
+  id         Int      @id @default(autoincrement())
+  serviceId  Int
+  providerId Int
+  position   Int      // lower = assigned next
+  service    Service  @relation(fields: [serviceId], references: [id])
+  provider   Provider @relation(fields: [providerId], references: [id])
+  updatedAt  DateTime @updatedAt
+
+  @@unique([serviceId, providerId])
+}
+
+// Webhook idempotency tracking
+model WebhookEvent {
+  id          Int      @id @default(autoincrement())
+  idempotencyKey String @unique
+  type        String
+  processedAt DateTime @default(now())
+}
